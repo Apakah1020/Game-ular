@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #2c3e50; /* Warna abu gelap yang elegan */
+            font-family: 'Consolas', monospace;
+            color: white;
+        }
+        
+        .game-container {
+            text-align: center;
+            position: relative;
+            width: 700px;
+        }
+        
+        #gameCanvas {
+            background-color: #ecf0f1; /* Warna abu terang untuk canvas */
+            border: 2px solid #34495e;
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .score-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: rgba(52, 73, 94, 0.9); /* Warna abu gelap dengan transparansi */
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .menu-screen, .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #34495e; /* Warna abu gelap untuk menu */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+        }
+        
+        .menu-screen h1, .game-over-screen h1 {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: #66ff00;
+            text-shadow: 0 0 10px rgba(102, 255, 0, 0.7);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .menu-screen p, .game-over-screen p {
+            font-size: 25px;
+            margin: 10px 0;
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: linear-gradient(45deg, #3498db, #2980b9); /* Warna biru untuk tombol */
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(45deg, #2980b9, #3498db);
+        }
+        
+        .menu-button {
+            background: linear-gradient(45deg, #e74c3c, #c0392b); /* Warna merah untuk tombol menu */
+        }
+        
+        .menu-button:hover {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+        }
+        
+        .skin-selector {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            gap: 15px;
+        }
+        
+        .skin-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .skin-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .skin-option.selected {
+            border-color: white;
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .menu-title {
+            margin-bottom: 30px;
+        }
+        
+        .menu-subtitle {
+            font-size: 30px;
+            color: #3498db; /* Warna biru untuk subtitle */
+            margin-bottom: 20px;
+        }
+        
+        .high-score-display {
+            background-color: rgba(44, 62, 80, 0.8); /* Warna abu lebih gelap */
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 22px;
+            border: 1px solid #3498db; /* Border biru untuk highlight */
+        }
+        
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="score-container">
+            <div id="score">Score: 0</div>
+            <div id="highScore">High Score: 0</div>
+        </div>
+        
+        <canvas id="gameCanvas" width="700" height="600"></canvas>
+        
+        <div id="menuScreen" class="menu-screen">
+            <div class="menu-title">
+                <h1>Game Ular Kali</h1>
+                <p class="menu-subtitle">Pilih Skin Ular Kamu!</p>
+            </div>
+            
+            <div class="high-score-display">
+                <p id="menuHighScore">High score ente: 0</p>
+            </div>
+            
+            <div class="skin-selector">
+                <div class="skin-option selected" data-color="#66ff00" style="background-color: #66ff00;"></div>
+                <div class="skin-option" data-color="#0066ff" style="background-color: #0066ff;"></div>
+                <div class="skin-option" data-color="#ff3366" style="background-color: #ff3366;"></div>
+                <div class="skin-option" data-color="#ffcc00" style="background-color: #ffcc00;"></div>
+                <div class="skin-option" data-color="#cc66ff" style="background-color: #cc66ff;"></div>
+            </div>
+            
+            <button id="startButton">MULAI GAME!</button>
+        </div>
+        
+        <div id="gameOverScreen" class="game-over-screen hidden">
+            <h1>Kok kalah si</h1>
+            <p id="finalScore">Score ente: 0</p>
+            <p id="finalHighScore">Highscore ente: 0</p>
+            
+            <div class="button-container">
+                <button id="restartButton">Main lagi?</button>
+                <button id="backToMenuButton" class="menu-button">Kembali ke Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game constants
+        const GAME_WIDTH = 700;
+        const GAME_HEIGHT = 600;
+        const SPEED = 125; // milliseconds
+        const SPACE_SIZE = 50;
+        const BODY_PARTS = 3;
+        const FOOD_COLOR = "#FF0000";
+        const BACKGROUND_COLOR = "#ecf0f1"; // Warna abu terang untuk canvas
+        const ENEMY_SNAKE_COLOR = "orange";
+        const ENEMY_HEAD_COLOR = "red";
+        
+        // Snake skin options
+        const SKIN_OPTIONS = [
+            { name: "Hijau Classic", color: "#66ff00" },
+            { name: "Biru Keren", color: "#0066ff" },
+            { name: "Merah Menyala", color: "#ff3366" },
+            { name: "Kuning Cerah", color: "#ffcc00" },
+            { name: "Ungu Eksklusif", color: "#cc66ff" }
+        ];
+        
+        // Game variables
+        let canvas, ctx;
+        let snake, foods, enemySnakes;
+        let score = 0;
+        let direction = 'down';
+        let gameRunning = false;
+        let highScore = 0;
+        let gameInterval;
+        let selectedSkin = SKIN_OPTIONS[0].color; // Default to green
+        
+        // DOM elements
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const backToMenuButton = document.getElementById('backToMenuButton');
+        const menuHighScore = document.getElementById('menuHighScore');
+        const finalScore = document.getElementById('finalScore');
+        const finalHighScore = document.getElementById('finalHighScore');
+        const skinOptions = document.querySelectorAll('.skin-option');
+        
+        // Initialize game
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Load high score from localStorage
+            highScore = localStorage.getItem('snakeHighScore') || 0;
+            menuHighScore.textContent = `High score ente: ${highScore}`;
+            
+            // Event listeners
+            startButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', restartGame);
+            backToMenuButton.addEventListener('click', backToMenu);
+            
+            // Skin selection
+            skinOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected class from all options
+                    skinOptions.forEach(opt => opt.classList.remove('selected'));
+                    
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    
+                    // Update selected skin
+                    selectedSkin = this.getAttribute('data-color');
+                });
+            });
+            
+            // Keyboard controls
+            document.addEventListener('keydown', handleKeyPress);
+        }
+        
+        // Snake class
+        class Snake {
+            constructor(color) {
+                this.bodySize = BODY_PARTS;
+                this.coordinates = [];
+                this.squares = [];
+                this.color = color;
+                
+                // Initialize snake body
+                for (let i = 0; i < BODY_PARTS; i++) {
+                    this.coordinates.push([0, 0]);
+                }
+            }
+            
+            draw() {
+                this.squares = [];
+                for (let i = 0; i < this.coordinates.length; i++) {
+                    const [x, y] = this.coordinates[i];
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(x, y, SPACE_SIZE, SPACE_SIZE);
+                    
+                    // Add eyes to the head
+                    if (i === 0) {
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(x + 10, y + 10, 8, 8);
+                        ctx.fillRect(x + 30, y + 10, 8, 8);
+                        ctx.fillStyle = 'black';
+                        ctx.fillRect(x + 12, y + 12, 4, 4);
+                        ctx.fillRect(x + 32, y + 12, 4, 4);
+                    }
+                    
+                    // Store square info for later removal
+                    this.squares.push({x, y});
+                }
+            }
+            
+            move(newDirection) {
+                const [headX, headY] = this.coordinates[0];
+                let newX = headX;
+                let newY = headY;
+                
+                if (newDirection === 'up') newY -= SPACE_SIZE;
+                else if (newDirection === 'down') newY += SPACE_SIZE;
+                else if (newDirection === 'left') newX -= SPACE_SIZE;
+                else if (newDirection === 'right') newX += SPACE_SIZE;
+                
+                // Add new head
+                this.coordinates.unshift([newX, newY]);
+                
+                // Remove tail if no food was eaten
+                if (!this.ateFood) {
+                    this.coordinates.pop();
+                } else {
+                    this.ateFood = false; // Reset flag
+                }
+            }
+            
+            checkSelfCollision() {
+                const [headX, headY] = this.coordinates[0];
+                
+                // Check wall collision
+                if (headX < 0 || headX >= GAME_WIDTH || headY < 0 || headY >= GAME_HEIGHT) {
+                    return true;
+                }
+                
+                // Check body collision
+                for (let i = 1; i < this.coordinates.length; i++) {
+                    if (headX === this.coordinates[i][0] && headY === this.coordinates[i][1]) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+        }
+        
+        // Food class
+        class Food {
+            constructor() {
+                this.coordinates = this.placeFood();
+            }
+            
+            placeFood() {
+                let x, y;
+                let validPosition = false;
+                
+                while (!validPosition) {
+                    x = Math.floor(Math.random() * (GAME_WIDTH / SPACE_SIZE)) * SPACE_SIZE;
+                    y = Math.floor(Math.random() * (GAME_HEIGHT / SPACE_SIZE)) * SPACE_SIZE;
+                    
+                    // Check if position is not on snake
+                    validPosition = true;
+                    for (const segment of snake.coordinates) {
+                        if (segment[0] === x && segment[1] === y) {
+                            validPosition = false;
+                            break;
+                        }
+                    }
+                }
+                
+                return [x, y];
+            }
+            
+            draw() {
+                const [x, y] = this.coordinates;
+                ctx.fillStyle = FOOD_COLOR;
+                ctx.beginPath();
+                ctx.arc(x + SPACE_SIZE/2, y + SPACE_SIZE/2, SPACE_SIZE/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add shine effect to food
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.beginPath();
+                ctx.arc(x + SPACE_SIZE/2 - 5, y + SPACE_SIZE/2 - 5, SPACE_SIZE/4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // Enemy Snake class
+        class EnemySnake {
+            constructor() {
+                this.bodySize = Math.floor(Math.random() * 3) + 3; // 3-5 body parts
+                this.coordinates = [];
+                this.squares = [];
+                this.direction = ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)];
+                
+                // Start in the middle of the screen
+                const startX = Math.floor(GAME_WIDTH / (2 * SPACE_SIZE)) * SPACE_SIZE;
+                const startY = Math.floor(GAME_HEIGHT / (2 * SPACE_SIZE)) * SPACE_SIZE;
+                
+                for (let i = 0; i < this.bodySize; i++) {
+                    this.coordinates.push([startX, startY + i * SPACE_SIZE]);
+                }
+            }
+            
+            draw() {
+                this.squares = [];
+                for (let i = 0; i < this.coordinates.length; i++) {
+                    const [x, y] = this.coordinates[i];
+                    
+                    // Head is different color
+                    ctx.fillStyle = i === 0 ? ENEMY_HEAD_COLOR : ENEMY_SNAKE_COLOR;
+                    ctx.fillRect(x, y, SPACE_SIZE, SPACE_SIZE);
+                    
+                    // Add angry eyes to enemy head
+                    if (i === 0) {
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(x + 10, y + 10, 8, 8);
+                        ctx.fillRect(x + 30, y + 10, 8, 8);
+                        ctx.fillStyle = 'red';
+                        ctx.fillRect(x + 12, y + 12, 4, 4);
+                        ctx.fillRect(x + 32, y + 12, 4, 4);
+                    }
+                    
+                    // Store square info
+                    this.squares.push({x, y});
+                }
+            }
+            
+            move() {
+                const [headX, headY] = this.coordinates[0];
+                let newX = headX;
+                let newY = headY;
+                
+                if (this.direction === "up") newY -= SPACE_SIZE;
+                else if (this.direction === "down") newY += SPACE_SIZE;
+                else if (this.direction === "left") newX -= SPACE_SIZE;
+                else if (this.direction === "right") newX += SPACE_SIZE;
+                
+                // Check if hit wall
+                if (newX < 0 || newX >= GAME_WIDTH || newY < 0 || newY >= GAME_HEIGHT) {
+                    // Change direction
+                    this.direction = ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)];
+                    return;
+                }
+                
+                // Add new head
+                this.coordinates.unshift([newX, newY]);
+                
+                // Remove tail
+                this.coordinates.pop();
+                
+                // Randomly change direction (30% chance)
+                if (Math.random() < 0.3) {
+                    this.direction = ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)];
+                }
+            }
+        }
+        
+        // Start game
+        function startGame() {
+            menuScreen.classList.add('hidden');
+            
+            // Reset direction to default
+            direction = 'down';
+            
+            // Initialize game objects
+            snake = new Snake(selectedSkin);
+            foods = [];
+            enemySnakes = [];
+            
+            // Create foods
+            for (let i = 0; i < 3; i++) {
+                foods.push(new Food());
+            }
+            
+            // Create enemy snakes
+            for (let i = 0; i < 1; i++) {
+                enemySnakes.push(new EnemySnake());
+            }
+            
+            // Reset score
+            score = 0;
+            updateScore();
+            
+            // Start game loop
+            gameRunning = true;
+            gameInterval = setInterval(gameLoop, SPEED);
+            
+            // Initial draw
+            draw();
+        }
+        
+        // Game loop
+        function gameLoop() {
+            // Move snake
+            snake.move(direction);
+            
+            // Check if snake ate food
+            const head = snake.coordinates[0];
+            for (let i = 0; i < foods.length; i++) {
+                const food = foods[i];
+                if (head[0] === food.coordinates[0] && head[1] === food.coordinates[1]) {
+                    // Remove eaten food
+                    foods.splice(i, 1);
+                    
+                    // Add new food
+                    foods.push(new Food());
+                    
+                    // Increase score
+                    score++;
+                    updateScore();
+                    
+                    // Set flag to prevent tail removal
+                    snake.ateFood = true;
+                    break;
+                }
+            }
+            
+            // Move enemy snakes
+            for (const enemy of enemySnakes) {
+                enemy.move();
+            }
+            
+            // Check collisions
+            if (snake.checkSelfCollision()) {
+                gameOver();
+                return;
+            }
+            
+            // Check enemy snake collision
+            for (const enemy of enemySnakes) {
+                for (const segment of enemy.coordinates) {
+                    if (head[0] === segment[0] && head[1] === segment[1]) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+            
+            // Redraw everything
+            draw();
+        }
+        
+        // Draw game objects
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = BACKGROUND_COLOR;
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            
+            // Draw snake
+            snake.draw();
+            
+            // Draw foods
+            for (const food of foods) {
+                food.draw();
+            }
+            
+            // Draw enemy snakes
+            for (const enemy of enemySnakes) {
+                enemy.draw();
+            }
+        }
+        
+        // Handle keyboard input
+        function handleKeyPress(e) {
+            if (!gameRunning) return;
+            
+            const key = e.key;
+            
+            if (key === 'ArrowLeft' && direction !== 'right') {
+                direction = 'left';
+            } else if (key === 'ArrowRight' && direction !== 'left') {
+                direction = 'right';
+            } else if (key === 'ArrowUp' && direction !== 'down') {
+                direction = 'up';
+            } else if (key === 'ArrowDown' && direction !== 'up') {
+                direction = 'down';
+            }
+        }
+        
+        // Update score display
+        function updateScore() {
+            scoreElement.textContent = `Score: ${score}`;
+            highScoreElement.textContent = `High Score: ${highScore}`;
+        }
+        
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            
+            // Update high score if needed
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+            }
+            
+            // Show game over screen
+            finalScore.textContent = `Score ente: ${score}`;
+            finalHighScore.textContent = `Highscore ente: ${highScore}`;
+            gameOverScreen.classList.remove('hidden');
+        }
+        
+        // Restart game
+        function restartGame() {
+            gameOverScreen.classList.add('hidden');
+            startGame();
+        }
+        
+        // Back to menu
+        function backToMenu() {
+            // Stop game if running
+            gameRunning = false;
+            if (gameInterval) {
+                clearInterval(gameInterval);
+            }
+            
+            // Hide game over screen and show menu
+            gameOverScreen.classList.add('hidden');
+            menuScreen.classList.remove('hidden');
+            
+            // Update high score in menu if needed
+            menuHighScore.textContent = `High score ente: ${highScore}`;
+        }
+        
+        // Initialize when page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
